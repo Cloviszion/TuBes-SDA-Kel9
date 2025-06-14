@@ -233,9 +233,9 @@ int main() {
             case 9: displaySubtree(); break;
             case 10: displayStats(); break;
             case 11: History_display(historyHead); break;
-            case 12: Stack_undoAdd(&addStack, &queueHead, root, History_add); break;
-            case 13: Stack_redoAdd(&redoStack, &queueHead, root, History_add); break;
-            case 14: Stack_undoDelete(&deleteStack, root, History_add); break;
+            case 12: Stack_undoAdd(&addStack, &redoStack, &queueHead, root, History_add); break;
+            case 13: Stack_redoAdd(&redoStack, &addStack, &queueHead, root, History_add); break;
+            case 14: Stack_undoDelete(&deleteStack, &redoStack, root, History_add); break;
             case 15: saveTreeToJSON(); break;
             case 16: cleanup(); printf("Keluar...\n"); break;
             default: printf("Pilihan tidak valid!\n");
