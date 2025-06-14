@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "tree.h"
+#include "cJSON.h"
 
 extern StackNode* deleteStack;
 extern HistoryNode* historyHead;
