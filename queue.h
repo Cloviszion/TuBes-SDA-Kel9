@@ -3,7 +3,7 @@
 
 #include "history.h"
 
-
+// Forward declarations
 typedef struct StackNode StackNode;
 typedef struct TreeNode TreeNode;
 
@@ -14,9 +14,10 @@ typedef struct QueueNode {
     struct QueueNode* next;
 } QueueNode;
 
-// fungsi prototypes
+// Function prototypes
 QueueNode* Queue_createNode(const char* name, const char* type, const char* parentName);
-void Queue_add(QueueNode** head, const char* name, const char* type, const char* parentName, void (*addToHistory)(HistoryNode**, const char*), void (*pushAddStack)(StackNode**, const char*));
+int Queue_checkDuplicate(QueueNode* head, TreeNode* root, const char* name);
+void Queue_add(QueueNode** head, const char* name, const char* type, const char* parentName, TreeNode* root, void (*addToHistory)(HistoryNode**, const char*), void (*pushAddStack)(StackNode**, const char*, const char*, const char*, const char*));
 void Queue_processToTree(QueueNode** head, TreeNode* root, void (*addToHistory)(HistoryNode**, const char*));
 void Queue_edit(QueueNode* head, const char* name, void (*addToHistory)(HistoryNode**, const char*));
 void Queue_delete(QueueNode** head, const char* name, void (*addToHistory)(HistoryNode**, const char*));
