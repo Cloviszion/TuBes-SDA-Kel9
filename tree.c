@@ -256,6 +256,37 @@ void Tree_saveToJSON(TreeNode* node, cJSON* json) {
     }
 }
 
+void Tree_saveToFile(TreeNode* root, const char* filename) {
+    if (!root) {
+        printf("Pohon kosong!\n");
+        return;
+    }
+    
+    cJSON* json = cJSON_CreateObject();
+    Tree_saveToJSON(root, json);
+    
+    char* jsonString = cJSON_Print(json);
+    if (!jsonString) {
+        printf("Gagal membuat string JSON!\n");
+        cJSON_Delete(json);
+        return;
+    }
+    
+    FILE* file = fopen(filename, "w");
+    if (!file) {
+        printf("Gagal membuka file %s!\n", filename);
+        free(jsonString);
+        cJSON_Delete(json);
+        return;
+    }
+    
+    fprintf(file, "%s", jsonString);
+    fclose(file);
+    free(jsonString);
+    cJSON_Delete(json);
+    printf("Pohon berhasil disimpan ke %s!\n", filename);
+}
+
 void Tree_free(TreeNode* node) {
     if (!node) return;
     for (int i = 0; i < node->childCount; i++) {
