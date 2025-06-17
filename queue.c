@@ -87,38 +87,73 @@ void Queue_add(QueueNode** head, const char* name, const char* type, const char*
 }
 
 void Queue_processToTree(QueueNode** head, TreeNode* root, void (*addToHistory)(HistoryNode**, const char*)) {
-    QueueNode* current = *head;
-    QueueNode* prev = NULL;
-    int successCount = 0, failCount = 0;
-    
-    while (current) {
-        TreeNode* parent = Tree_findNode(root, current->parentName);
-        if (!parent) {
-            printf("Parent %s not found for %s!\n", current->parentName, current->name);
-            prev = current;
-            current = current->next;
-            failCount++;
-            continue;
-        }
-        
-        TreeNode* newNode = Tree_createNode(current->name, current->type);
-        Tree_addNode(parent, newNode);
-        
-        char operation[200];
-        snprintf(operation, sizeof(operation), "Processed %s (%s) from Queue to Tree under %s", current->name, current->type, current->parentName);
-        addToHistory(&historyHead, operation);
-        
-        if (prev) {
-            prev->next = current->next;
-        } else {
-            *head = current->next;
-        }
-        QueueNode* temp = current;
-        current = current->next;
-        free(temp);
-        successCount++;
+    if (!*head) {
+        printf("Queue is empty, nothing to process!\n");
+        return;
     }
-    printf("Queue processing completed: %d succeeded, %d failed.\n", successCount, failCount);
+
+    // Display queue contents with numbering
+    QueueNode* current = *head;
+    int index = 1;
+    printf("Queue contents:\n");
+    while (current) {
+        printf("%d. Name: %s, Type: %s, Parent: %s\n", index++, current->name, current->type, current->parentName);
+        current = current->next;
+    }
+
+    // Ask user to select an entity to process
+    int choice;
+    printf("Enter the number of the entity to process (1 to %d, or 0 to cancel): ", index - 1);
+    scanf("%d", &choice);
+
+    if (choice == 0) {
+        printf("Process cancelled.\n");
+        return;
+    }
+
+    if (choice < 1 || choice >= index) {
+        printf("Invalid choice!\n");
+        return;
+    }
+
+    // Find the selected node
+    current = *head;
+    QueueNode* prev = NULL;
+    index = 1;
+    while (current && index < choice) {
+        prev = current;
+        current = current->next;
+        index++;
+    }
+
+    if (!current) {
+        printf("Entity not found!\n");
+        return;
+    }
+
+    // Process the selected node to tree
+    TreeNode* parent = Tree_findNode(root, current->parentName);
+    if (!parent) {
+        printf("Parent %s not found in tree!\n", current->parentName);
+        return;
+    }
+
+    TreeNode* newNode = Tree_createNode(current->name, current->type);
+    Tree_addNode(parent, newNode);
+
+    char operation[200];
+    snprintf(operation, sizeof(operation), "Processed %s (%s) from Queue to Tree under %s", current->name, current->type, current->parentName);
+    addToHistory(&historyHead, operation);
+
+    // Remove from queue
+    if (prev) {
+        prev->next = current->next;
+    } else {
+        *head = current->next;
+    }
+    free(current);
+
+    printf("Entity processed to tree successfully!\n");
 }
 
 void Queue_edit(QueueNode* head, const char* name, void (*addToHistory)(HistoryNode**, const char*)) {
