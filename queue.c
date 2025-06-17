@@ -20,21 +20,76 @@ QueueNode* Queue_createNode(const char* name, const char* type, const char* pare
     return node;
 }
 
-void Queue_add(QueueNode** head, const char* name, const char* type, const char* parentName, void (*addToHistory)(HistoryNode**, const char*), void (*pushAddStack)(StackNode**, const char*)) {
-    QueueNode* node = Queue_createNode(name, type, parentName);
+int Queue_checkDuplicate(QueueNode* head, TreeNode* root, const char* name) {
+    // Check queue
+    QueueNode* current = head;
+    while (current) {
+        if (strcmp(current->name, name) == 0) {
+            return 1; // Duplikat ditemukan
+        }
+        current = current->next;
+    }
+    // Check tree
+    if (Tree_findNode(root, name)) {
+        return 1; // Duplikat ditemukan
+    }
+    return 0; // Tidak ada duplikat
+}
+
+void Queue_add(QueueNode** head, const char* name, const char* type, const char* parentName, TreeNode* root, void (*addToHistory)(HistoryNode**, const char*), void (*pushAddStack)(StackNode**, const char*, const char*, const char*, const char*)) {
+    // Check for duplicate
+    if (Queue_checkDuplicate(*head, root, name)) {
+        printf("Error: Entity with name %s already exists in queue or tree!\n", name);
+        return;
+    }
+
+    char finalParentName[100];
+    strcpy(finalParentName, parentName);
+
+    // Special handling for RT
+    if (strcmp(type, "rt") == 0) {
+        TreeNode* kelurahan = Tree_findNode(root, parentName);
+        if (!kelurahan || strcmp(kelurahan->type, "kelurahan/desa") != 0) {
+            printf("Error: Parent %s is not a kelurahan/desa!\n", parentName);
+            return;
+        }
+        printf("Available RWs under %s:\n", parentName);
+        int rwCount = 0;
+        for (int i = 0; i < kelurahan->childCount; i++) {
+            if (strcmp(kelurahan->children[i]->type, "rw") == 0) {
+                printf("%d. %s\n", ++rwCount, kelurahan->children[i]->name);
+            }
+        }
+        if (rwCount == 0) {
+            printf("No RWs found under %s!\n", parentName);
+            return;
+        }
+        printf("Enter RW name: ");
+        char rwName[100];
+        scanf(" %[^\n]", rwName);
+        TreeNode* rw = Tree_findNode(kelurahan, rwName);
+        if (!rw || strcmp(rw->type, "rw") != 0) {
+            printf("Error: Invalid RW name!\n");
+            return;
+        }
+        strcpy(finalParentName, rwName);
+    }
+
+    QueueNode* node = Queue_createNode(name, type, finalParentName);
     node->next = *head;
     *head = node;
     
     char operation[200];
-    snprintf(operation, sizeof(operation), "Added %s (%s) to Queue under %s", name, type, parentName);
+    snprintf(operation, sizeof(operation), "Added %s (%s) to Queue under %s", name, type, finalParentName);
     addToHistory(&historyHead, operation);
-    pushAddStack(&addStack, operation);
+    pushAddStack(&addStack, name, type, finalParentName, operation);
     printf("Entity added to Queue!\n");
 }
 
 void Queue_processToTree(QueueNode** head, TreeNode* root, void (*addToHistory)(HistoryNode**, const char*)) {
     QueueNode* current = *head;
     QueueNode* prev = NULL;
+    int successCount = 0, failCount = 0;
     
     while (current) {
         TreeNode* parent = Tree_findNode(root, current->parentName);
@@ -42,6 +97,7 @@ void Queue_processToTree(QueueNode** head, TreeNode* root, void (*addToHistory)(
             printf("Parent %s not found for %s!\n", current->parentName, current->name);
             prev = current;
             current = current->next;
+            failCount++;
             continue;
         }
         
@@ -60,8 +116,9 @@ void Queue_processToTree(QueueNode** head, TreeNode* root, void (*addToHistory)(
         QueueNode* temp = current;
         current = current->next;
         free(temp);
+        successCount++;
     }
-    printf("Queue processed to Tree!\n");
+    printf("Queue processing completed: %d succeeded, %d failed.\n", successCount, failCount);
 }
 
 void Queue_edit(QueueNode* head, const char* name, void (*addToHistory)(HistoryNode**, const char*)) {
