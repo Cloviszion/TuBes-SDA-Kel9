@@ -30,7 +30,7 @@ void cJSON_AddItemToArray(cJSON *array, cJSON *item);
 cJSON *cJSON_CreateString(const char *string);
 char *cJSON_Print(cJSON *item);
 cJSON *cJSON_GetObjectItem(cJSON *object, const char *string);
-int cJSON_Getarrayize(cJSON *array);
+int cJSON_GetArraySize(cJSON *array);
 cJSON *cJSON_GetArrayItem(cJSON *array, int index);
 int cJSON_IsArray(cJSON *item);
 
