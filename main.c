@@ -71,7 +71,7 @@ void addToQueue() {
     printf("Masukkan nama parent: ");
     scanf(" %[^\n]", parentName);
     
-    Queue_add(&queueHead, name, type, parentName, History_add, Stack_pushAdd);
+    Queue_add(&queueHead, name, type, parentName, root, History_add, Stack_pushAdd);
 }
 
 void manageQueue() {
