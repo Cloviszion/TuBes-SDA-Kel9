@@ -70,6 +70,27 @@ void Stack_undoAdd(StackNode** addStack, StackNode** redoStack, QueueNode** queu
         current = current->next;
     }
 
+    TreeNode* target = Tree_findNode(root, top->name);
+    if (target) {
+        TreeNode* parent = Tree_findParent(root, target);
+        if (parent) {
+            for (int i = 0; i < parent->childCount; i++) {
+                if (parent->children[i] == target) {
+                    for (int j = i; j < parent->childCount - 1; j++) {
+                        parent->children[j] = parent->children[j + 1];
+                    }
+                    parent->childCount--;
+                    parent->children = (TreeNode**)realloc(parent->children, parent->childCount * sizeof(TreeNode*));
+                    if (parent->childCount == 0) {
+                        free(parent->children);
+                        parent->children = NULL;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
     char operation[200];
     snprintf(operation, sizeof(operation), "Undid add %s (%s) under %s", top->name, top->type, top->parentName);
     addToHistory(&historyHead, operation);
@@ -85,17 +106,25 @@ void Stack_redoAdd(StackNode** redoStack, StackNode** addStack, QueueNode** queu
     StackNode* top = *redoStack;
     *redoStack = top->next;
 
-    QueueNode* node = Queue_createNode(top->name, top->type, top->parentName);
-    node->next = *queueHead;
-    *queueHead = node;
+    TreeNode* parent = Tree_findNode(root, top->parentName);
+    if (parent) {
+        TreeNode* newNode = Tree_createNode(top->name, top->type);
+        Tree_addNode(parent, newNode);
 
-    Stack_pushAdd(addStack, top->name, top->type, top->parentName, top->operation);
+        Stack_pushAdd(addStack, top->name, top->type, top->parentName, top->operation);
 
-    char operation[200];
-    snprintf(operation, sizeof(operation), "Redid add %s (%s) under %s", top->name, top->type, top->parentName);
-    addToHistory(&historyHead, operation);
-    free(top);
-    printf("Redo add completed!\n");
+        QueueNode* node = Queue_createNode(top->name, top->type, top->parentName);
+        node->next = *queueHead;
+        *queueHead = node;
+
+        char operation[200];
+        snprintf(operation, sizeof(operation), "Redid add %s (%s) under %s", top->name, top->type, top->parentName);
+        addToHistory(&historyHead, operation);
+        printf("Redo add completed and added to tree!\n");
+    } else {
+        printf("Parent %s not found in tree, redo add failed!\n", top->parentName);
+        free(top); 
+    }
 }
 
 void Stack_undoDelete(StackNode** deleteStack, StackNode** redoStack, TreeNode* root, void (*addToHistory)(HistoryNode**, const char*)) {
@@ -120,6 +149,39 @@ void Stack_undoDelete(StackNode** deleteStack, StackNode** redoStack, TreeNode* 
     addToHistory(&historyHead, operation);
     free(top);
     printf("Undo delete completed!\n");
+}
+
+void Stack_redoDelete(StackNode** redoStack, StackNode** deleteStack, TreeNode* root, void (*addToHistory)(HistoryNode**, const char*)) {
+    if (!*redoStack) {
+        printf("No delete operations to redo!\n");
+        return;
+    }
+    StackNode* top = *redoStack;
+    *redoStack = top->next;
+
+    Stack_pushDelete(deleteStack, top->node, top->parent, top->operation);
+
+    TreeNode* parent = top->parent;
+    for (int i = 0; i < parent->childCount; i++) {
+        if (parent->children[i] == top->node) {
+            for (int j = i; j < parent->childCount - 1; j++) {
+                parent->children[j] = parent->children[j + 1];
+            }
+            parent->childCount--;
+            parent->children = (TreeNode**)realloc(parent->children, parent->childCount * sizeof(TreeNode*));
+            if (parent->childCount == 0) {
+                free(parent->children);
+                parent->children = NULL;
+            }
+            break;
+        }
+    }
+
+    char operation[200];
+    snprintf(operation, sizeof(operation), "Redid delete %s (%s)", top->name, top->type);
+    addToHistory(&historyHead, operation);
+    free(top);
+    printf("Redo delete completed!\n");
 }
 
 void Stack_free(StackNode* head) {
